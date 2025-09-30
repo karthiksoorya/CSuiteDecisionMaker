@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orchestration Tool Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.8); }
+        }
+        @keyframes data-flow {
+            0% { transform: translateX(-100%); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateX(100%); opacity: 0; }
+        }
+        .pulse-glow { animation: pulse-glow 2s infinite; }
+        .data-flow { animation: data-flow 3s infinite; }
+        .connection-line {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+            animation: data-flow 2s infinite;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 min-h-screen text-white">
+    <div class="container mx-auto px-6 py-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                🎛️ C-Suite Decision Maker
+            </h1>
+            <p class="text-slate-300">Watch how your request flows through the system</p>
+        </div>
+
+        <!-- User Input Section -->
+        <div class="bg-slate-800/50 backdrop-blur rounded-xl p-6 mb-8 border border-slate-700">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-xl">👤</div>
+                <div>
+                    <h3 class="text-xl font-semibold">User Request</h3>
+                    <p class="text-slate-400">Send a command to the orchestration tool</p>
+                </div>
+            </div>
+            
+            <div class="flex gap-3">
+                <input 
+                    type="text" 
+                    id="userInput" 
+                    placeholder="e.g., Get weather data and analyze sales trends for Q4"
+                    class="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                >
+                <button 
+                    onclick="sendRequest()" 
+                    class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-medium transition-colors"
+                >
+                    Send Request
+                </button>
+            </div>
+        </div>
+
+        <!-- Orchestration Tool -->
+        <div class="relative mb-8">
+            <div id="orchestrator" class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 border-2 border-transparent">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-2xl">🎯</div>
+                    <div>
+                        <h3 class="text-2xl font-bold">Orchestration Agent</h3>
+                        <p class="text-blue-100">Managing and coordinating all operations</p>
+                    </div>
+                </div>
+                
+                <div id="orchestratorStatus" class="bg-white/10 rounded-lg p-4">
+                    <p class="text-sm opacity-75">Status: Ready</p>
+                    <div id="orchestratorLog" class="mt-2 text-sm space-y-1">
+                        <div class="text-blue-200">💡 Waiting for user request...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Database Agents and Databases -->
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold text-slate-300 mb-4">🗄️ Database Layer</h3>
+            <div class="grid md:grid-cols-3 gap-6">
+                <!-- User DB Section -->
+                <div class="space-y-2">
+                    <div id="userDBAgent" class="bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700 transition-all duration-300">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-sm">🤖</div>
+                            <div>
+                                <h4 class="text-sm font-semibold">User DB Agent</h4>
+                                <p class="text-slate-400 text-xs">Manages customer data</p>
+                            </div>
+                        </div>
+                        <div id="userDBAgentStatus" class="text-xs text-slate-400">Status: Idle</div>
+                        <div id="userDBAgentData" class="mt-2 text-xs"></div>
+                    </div>
+                    <div class="flex justify-center">
+                        <div class="w-1 h-4 bg-gradient-to-b from-blue-400 to-transparent"></div>
+                    </div>
+                    <div id="userDBMCP" class="bg-slate-600/50 backdrop-blur rounded-lg p-2 border border-slate-500 transition-all duration-300">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 bg-blue-400 rounded flex items-center justify-center text-xs">🔌</div>
+                            <div>
+                                <h5 class="text-xs font-semibold">User DB MCP</h5>
+                                <p class="text-slate-400 text-xs">Protocol connector</p>
+                            </div>
+                        </div>
+                        <div id="userDBMCPStatus" class="text-xs text-slate-400 mt-1">Status: Ready</div>
+                    </div>
+                    <div class="flex justify-center">
+                        <div class="w-1 h-4 bg-gradient-to-b from-blue-400 to-transparent"></div>
+                    </div>
+                    <div id="userDB" class="bg-slate-700/50 backdrop-blur rounded-xl p-3 border border-slate-600 transition-all duration-300">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-xs">👥</div>
+                            <div>
+                                <h5 class="text-xs font-semibold">User Database</h5>
+                                <p class="text-slate-400 text-xs">Customer records</p>
+                            </div>
+                        </div>
+                        <div id="userDBStatus" class="text-xs text-slate-400">Status: Ready</div>
+                    </div>
+                </div>
+
+                <!-- Sales DB Section -->
+                <div class="space-y-2">
+                    <div id="salesDBAgent" class="bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700 transition-all duration-300">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-sm">🤖</div>
+                            <div>
+                                <h4 class="text-sm font-semibold">Sales DB Agent</h4>
+                                <p class="text-slate-400 text-xs">Handles transaction data</p>
+                            </div>
+                        </div>
+                        <div id="salesDBAgentStatus" class="text-xs text-slate-400">Status: Idle</div>
+                        <div id="salesDBAgentData" class="mt-2 text-xs"></div>
+                    </div>
+                    <div class="flex justify-center">
+                        <div class="w-1 h-4 bg-gradient-to-b from-emerald-400 to-transparent"></div>
+                    </div>
+                    <div id="salesDBMCP" class="bg-slate-600/50 backdrop-blur rounded-lg p-2 border border-slate-500 transition-all duration-300">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 bg-emerald-400 rounded flex items-center justify-center text-xs">🔌</div>
+                            <div>
+                                <h5 class="text-xs font-semibold">Sales DB MCP</h5>
+                                <p class="text-slate-400 text-xs">Protocol connector</p>
+                            </div>
+                        </div>
+                        <div id="salesDBMCPStatus" class="text-xs text-slate-400 mt-1">Status: Ready</div>
+                    </div>
+                    <div class="flex justify-center">
+                        <div class="w-1 h-4 bg-gradient-to-b from-emerald-400 to-transparent"></div>
+                    </div>
+                    <div id="salesDB" class="bg-slate-700/50 backdrop-blur rounded-xl p-3 border border-slate-600 transition-all duration-300">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-8 h-8 bg-emerald-600 rounded-full flex items-center justify-center text-xs">💰</div>
+                            <div>
+                                <h5 class="text-xs font-semibold">Sales Database</h5>
+                                <p class="text-slate-400 text-xs">Transaction records</p>
+                            </div>
+                        </div>
+                        <div id="salesDBStatus" class="text-xs text-slate-400">Status: Ready</div>
+                    </div>
+                </div>
+
+                <!-- Inventory DB Section -->
+                <div class="space-y-2">
+                    <div id="inventoryDBAgent" class="bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700 transition-all duration-300">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center text-sm">🤖</div>
+                            <div>
+                                <h4 class="text-sm font-semibold">Inventory DB Agent</h4>
+                                <p class="text-slate-400 text-xs">Monitors stock levels</p>
+                            </div>
+                        </div>
+                        <div id="inventoryDBAgentStatus" class="text-xs text-slate-400">Status: Idle</div>
+                        <div id="inventoryDBAgentData" class="mt-2 text-xs"></div>
+                    </div>
+                    <div class="flex justify-center">
+                        <div class="w-1 h-4 bg-gradient-to-b from-amber-400 to-transparent"></div>
+                    </div>
+                    <div id="inventoryDBMCP" class="bg-slate-600/50 backdrop-blur rounded-lg p-2 border border-slate-500 transition-all duration-300">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 bg-amber-400 rounded flex items-center justify-center text-xs">🔌</div>
+                            <div>
+                                <h5 class="text-xs font-semibold">Inventory DB MCP</h5>
+                                <p class="text-slate-400 text-xs">Protocol connector</p>
+                            </div>
+                        </div>
+                        <div id="inventoryDBMCPStatus" class="text-xs text-slate-400 mt-1">Status: Ready</div>
+                    </div>
+                    <div class="flex justify-center">
+                        <div class="w-1 h-4 bg-gradient-to-b from-amber-400 to-transparent"></div>
+                    </div>
+                    <div id="inventoryDB" class="bg-slate-700/50 backdrop-blur rounded-xl p-3 border border-slate-600 transition-all duration-300">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center text-xs">📦</div>
+                            <div>
+                                <h5 class="text-xs font-semibold">Inventory Database</h5>
+                                <p class="text-slate-400 text-xs">Stock records</p>
+                            </div>
+                        </div>
+                        <div id="inventoryDBStatus" class="text-xs text-slate-400">Status: Ready</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Agents and APIs -->
+        <div class="mb-8">
+            <h3 class="text-lg font-semibold text-slate-300 mb-4">🌐 API Layer</h3>
+            <div class="grid md:grid-cols-3 gap-6">
+                <!-- Weather API Section -->
+                <div class="space-y-2">
+                    <div id="weatherAPIAgent" class="bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700 transition-all duration-300">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center text-sm">🤖</div>
+                            <div>
+                                <h4 class="text-sm font-semibold">Weather API Agent</h4>
+                                <p class="text-slate-400 text-xs">Fetches climate data</p>
+                            </div>
+                        </div>
+                        <div id="weatherAPIAgentStatus" class="text-xs text-slate-400">Status: Idle</div>
+                        <div id="weatherAPIAgentData" class="mt-2 text-xs"></div>
+                    </div>
+                    <div class="flex justify-center">
+                        <div class="w-1 h-4 bg-gradient-to-b from-orange-400 to-transparent"></div>
+                    </div>
+                    <div id="weatherAPIMCP" class="bg-slate-600/50 backdrop-blur rounded-lg p-2 border border-slate-500 transition-all duration-300">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 bg-orange-400 rounded flex items-center justify-center text-xs">🔌</div>
+                            <div>
+                                <h5 class="text-xs font-semibold">Weather API MCP</h5>
+                                <p class="text-slate-400 text-xs">Protocol connector</p>
+                            </div>
+                        </div>
+                        <div id="weatherAPIMCPStatus" class="text-xs text-slate-400 mt-1">Status: Ready</div>
+                    </div>
+                    <div class="flex justify-center">
+                        <div class="w-1 h-4 bg-gradient-to-b from-orange-400 to-transparent"></div>
+                    </div>
+                    <div id="weatherAPI" class="bg-slate-700/50 backdrop-blur rounded-xl p-3 border border-slate-600 transition-all duration-300">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center text-xs">🌤️</div>
+                            <div>
+                                <h5 class="text-xs font-semibold">Weather API</h5>
+                                <p class="text-slate-400 text-xs">External weather service</p>
+                            </div>
+                        </div>
+                        <div id="weatherAPIStatus" class="text-xs text-slate-400">Status: Available</div>
+                    </div>
+                </div>
+
+                <!-- Market API Section -->
+                <div class="space-y-2">
+                    <div id="marketAPIAgent" class="bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700 transition-all duration-300">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center text-sm">🤖</div>
+                            <div>
+                                <h4 class="text-sm font-semibold">Market API Agent</h4>
+                                <p class="text-slate-400 text-xs">Retrieves financial data</p>
+                            </div>
+                        </div>
+                        <div id="marketAPIAgentStatus" class="text-xs text-slate-400">Status: Idle</div>
+                        <div id="marketAPIAgentData" class="mt-2 text-xs"></div>
+                    </div>
+                    <div class="flex justify-center">
+                        <div class="w-1 h-4 bg-gradient-to-b from-red-400 to-transparent"></div>
+                    </div>
+                    <div id="marketAPIMCP" class="bg-slate-600/50 backdrop-blur rounded-lg p-2 border border-slate-500 transition-all duration-300">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 bg-red-400 rounded flex items-center justify-center text-xs">🔌</div>
+                            <div>
+                                <h5 class="text-xs font-semibold">Market API MCP</h5>
+                                <p class="text-slate-400 text-xs">Protocol connector</p>
+                            </div>
+                        </div>
+                        <div id="marketAPIMCPStatus" class="text-xs text-slate-400 mt-1">Status: Ready</div>
+                    </div>
+                    <div class="flex justify-center">
+                        <div class="w-1 h-4 bg-gradient-to-b from-red-400 to-transparent"></div>
+                    </div>
+                    <div id="marketAPI" class="bg-slate-700/50 backdrop-blur rounded-xl p-3 border border-slate-600 transition-all duration-300">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-xs">📈</div>
+                            <div>
+                                <h5 class="text-xs font-semibold">Market API</h5>
+                                <p class="text-slate-400 text-xs">Financial data service</p>
+                            </div>
+                        </div>
+                        <div id="marketAPIStatus" class="text-xs text-slate-400">Status: Available</div>
+                    </div>
+                </div>
+
+                <!-- Social API Section -->
+                <div class="space-y-2">
+                    <div id="socialAPIAgent" class="bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700 transition-all duration-300">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center text-sm">🤖</div>
+                            <div>
+                                <h4 class="text-sm font-semibold">Social API Agent</h4>
+                                <p class="text-slate-400 text-xs">Analyzes sentiment data</p>
+                            </div>
+                        </div>
+                        <div id="socialAPIAgentStatus" class="text-xs text-slate-400">Status: Idle</div>
+                        <div id="socialAPIAgentData" class="mt-2 text-xs"></div>
+                    </div>
+                    <div class="flex justify-center">
+                        <div class="w-1 h-4 bg-gradient-to-b from-pink-400 to-transparent"></div>
+                    </div>
+                    <div id="socialAPIMCP" class="bg-slate-600/50 backdrop-blur rounded-lg p-2 border border-slate-500 transition-all duration-300">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 bg-pink-400 rounded flex items-center justify-center text-xs">🔌</div>
+                            <div>
+                                <h5 class="text-xs font-semibold">Social API MCP</h5>
+                                <p class="text-slate-400 text-xs">Protocol connector</p>
+                            </div>
+                        </div>
+                        <div id="socialAPIMCPStatus" class="text-xs text-slate-400 mt-1">Status: Ready</div>
+                    </div>
+                    <div class="flex justify-center">
+                        <div class="w-1 h-4 bg-gradient-to-b from-pink-400 to-transparent"></div>
+                    </div>
+                    <div id="socialAPI" class="bg-slate-700/50 backdrop-blur rounded-xl p-3 border border-slate-600 transition-all duration-300">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-8 h-8 bg-pink-600 rounded-full flex items-center justify-center text-xs">📱</div>
+                            <div>
+                                <h5 class="text-xs font-semibold">Social Media API</h5>
+                                <p class="text-slate-400 text-xs">Social sentiment service</p>
+                            </div>
+                        </div>
+                        <div id="socialAPIStatus" class="text-xs text-slate-400">Status: Available</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analysis Engines -->
+        <div class="grid md:grid-cols-3 gap-6 mb-8">
+            <div id="statisticsEngine" class="bg-slate-800/50 backdrop-blur rounded-xl p-6 border border-slate-700 transition-all duration-300">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-xl">📊</div>
+                    <div>
+                        <h4 class="text-lg font-semibold">Statistics Engine</h4>
+                        <p class="text-slate-400 text-sm">Statistical analysis</p>
+                    </div>
+                </div>
+                <div id="statisticsEngineStatus" class="text-sm text-slate-400">Status: Idle</div>
+                <div id="statisticsEngineData" class="mt-3 text-sm"></div>
+            </div>
+
+            <div id="mlEngine" class="bg-slate-800/50 backdrop-blur rounded-xl p-6 border border-slate-700 transition-all duration-300">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-12 h-12 bg-indigo-500 rounded-full flex items-center justify-center text-xl">🤖</div>
+                    <div>
+                        <h4 class="text-lg font-semibold">ML Engine</h4>
+                        <p class="text-slate-400 text-sm">Machine learning</p>
+                    </div>
+                </div>
+                <div id="mlEngineStatus" class="text-sm text-slate-400">Status: Idle</div>
+                <div id="mlEngineData" class="mt-3 text-sm"></div>
+            </div>
+
+            <div id="predictiveEngine" class="bg-slate-800/50 backdrop-blur rounded-xl p-6 border border-slate-700 transition-all duration-300">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center text-xl">🔮</div>
+                    <div>
+                        <h4 class="text-lg font-semibold">Predictive Engine</h4>
+                        <p class="text-slate-400 text-sm">Forecasting models</p>
+                    </div>
+                </div>
+                <div id="predictiveEngineStatus" class="text-sm text-slate-400">Status: Idle</div>
+                <div id="predictiveEngineData" class="mt-3 text-sm"></div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="bg-slate-800/50 backdrop-blur rounded-xl p-6 border border-slate-700 opacity-0 transition-opacity duration-500">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-xl">✅</div>
+                <div>
+                    <h3 class="text-xl font-semibold">Final Results</h3>
+                    <p class="text-slate-400">Orchestrated response from all tools</p>
+                </div>
+            </div>
+            <div id="finalResults" class="bg-slate-700/50 rounded-lg p-4">
+                <!-- Results will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 0;
+        
+        function sendRequest() {
+            const input = document.getElementById('userInput');
+            const request = input.value.trim();
+            
+            if (!request) {
+                alert('Please enter a request first!');
+                return;
+            }
+            
+            // Reset everything
+            resetDashboard();
+            
+            // Start orchestration process
+            orchestrateRequest(request);
+        }
+        
+        function resetDashboard() {
+            currentStep = 0;
+            
+            // Reset orchestrator
+            document.getElementById('orchestrator').className = 'bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 border-2 border-transparent';
+            document.getElementById('orchestratorLog').innerHTML = '<div class="text-blue-200">💡 Processing request...</div>';
+            
+            // Reset all database agents
+            ['userDBAgent', 'salesDBAgent', 'inventoryDBAgent'].forEach(agentId => {
+                const agent = document.getElementById(agentId);
+                agent.className = 'bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700 transition-all duration-300';
+                document.getElementById(agentId + 'Status').textContent = 'Status: Idle';
+                document.getElementById(agentId + 'Data').innerHTML = '';
+            });
+            
+            // Reset all databases and MCP connectors
+            ['userDB', 'salesDB', 'inventoryDB'].forEach(dbId => {
+                const db = document.getElementById(dbId);
+                db.className = 'bg-slate-700/50 backdrop-blur rounded-xl p-3 border border-slate-600 transition-all duration-300';
+                document.getElementById(dbId + 'Status').textContent = 'Status: Ready';
+                
+                // Reset MCP connector
+                const mcpId = dbId + 'MCP';
+                const mcp = document.getElementById(mcpId);
+                if (mcp) {
+                    mcp.className = 'bg-slate-600/50 backdrop-blur rounded-lg p-2 border border-slate-500 transition-all duration-300';
+                    document.getElementById(mcpId + 'Status').textContent = 'Status: Ready';
+                }
+            });
+            
+            // Reset all API agents
+            ['weatherAPIAgent', 'marketAPIAgent', 'socialAPIAgent'].forEach(agentId => {
+                const agent = document.getElementById(agentId);
+                agent.className = 'bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700 transition-all duration-300';
+                document.getElementById(agentId + 'Status').textContent = 'Status: Idle';
+                document.getElementById(agentId + 'Data').innerHTML = '';
+            });
+            
+            // Reset all APIs and MCP connectors
+            ['weatherAPI', 'marketAPI', 'socialAPI'].forEach(apiId => {
+                const api = document.getElementById(apiId);
+                api.className = 'bg-slate-700/50 backdrop-blur rounded-xl p-3 border border-slate-600 transition-all duration-300';
+                document.getElementById(apiId + 'Status').textContent = 'Status: Available';
+                
+                // Reset MCP connector
+                const mcpId = apiId + 'MCP';
+                const mcp = document.getElementById(mcpId);
+                if (mcp) {
+                    mcp.className = 'bg-slate-600/50 backdrop-blur rounded-lg p-2 border border-slate-500 transition-all duration-300';
+                    document.getElementById(mcpId + 'Status').textContent = 'Status: Ready';
+                }
+            });
+            
+            // Reset all engines
+            ['statisticsEngine', 'mlEngine', 'predictiveEngine'].forEach(engineId => {
+                const engine = document.getElementById(engineId);
+                engine.className = 'bg-slate-800/50 backdrop-blur rounded-xl p-6 border border-slate-700 transition-all duration-300';
+                document.getElementById(engineId + 'Status').textContent = 'Status: Idle';
+                document.getElementById(engineId + 'Data').innerHTML = '';
+            });
+            
+            // Hide results
+            document.getElementById('resultsSection').style.opacity = '0';
+        }
+        
+        async function orchestrateRequest(request) {
+            const orchestratorLog = document.getElementById('orchestratorLog');
+            
+            // Step 1: Orchestrator analyzes request
+            await sleep(1000);
+            orchestratorLog.innerHTML = `
+                <div class="text-blue-200">🔍 Analyzing request: "${request}"</div>
+                <div class="text-yellow-200">📋 Identifying required data sources...</div>
+            `;
+            
+            // Determine which tools to use based on request content
+            const needsUserData = request.toLowerCase().includes('user') || request.toLowerCase().includes('customer') || request.toLowerCase().includes('demographic');
+            const needsSalesData = request.toLowerCase().includes('sales') || request.toLowerCase().includes('revenue') || request.toLowerCase().includes('purchase');
+            const needsInventory = request.toLowerCase().includes('inventory') || request.toLowerCase().includes('stock') || request.toLowerCase().includes('product');
+            const needsWeather = request.toLowerCase().includes('weather') || request.toLowerCase().includes('climate') || request.toLowerCase().includes('seasonal');
+            const needsMarket = request.toLowerCase().includes('market') || request.toLowerCase().includes('financial') || request.toLowerCase().includes('economic');
+            const needsSocial = request.toLowerCase().includes('social') || request.toLowerCase().includes('sentiment') || request.toLowerCase().includes('trend');
+            
+            await sleep(1500);
+            orchestratorLog.innerHTML += '<div class="text-cyan-200">🎯 Coordinating parallel data retrieval...</div>';
+            
+            // Parallel data retrieval through database agents
+            const dbPromises = [];
+            if (needsUserData) {
+                dbPromises.push(activateAndRetrieveData('userDBAgent', 'Connecting to User DB...', {
+                    title: '🤖 User DB Agent Report:',
+                    data: ['• Active Users: 45,230', '• Avg Age: 34.2 years', '• Top Region: West Coast', '• Engagement: 78%']
+                }));
+                orchestratorLog.innerHTML += '<div class="text-green-200">🤖 Deploying User DB Agent...</div>';
+            }
+            
+            if (needsSalesData) {
+                dbPromises.push(activateAndRetrieveData('salesDBAgent', 'Analyzing transactions...', {
+                    title: '🤖 Sales DB Agent Report:',
+                    data: ['• Total Revenue: $3.2M', '• Transactions: 12,450', '• Avg Order: $257', '• Growth: +18%']
+                }));
+                orchestratorLog.innerHTML += '<div class="text-green-200">🤖 Deploying Sales DB Agent...</div>';
+            }
+            
+            if (needsInventory) {
+                dbPromises.push(activateAndRetrieveData('inventoryDBAgent', 'Checking stock levels...', {
+                    title: '🤖 Inventory DB Agent Report:',
+                    data: ['• Total SKUs: 2,847', '• Low Stock: 23 items', '• Turnover Rate: 4.2x', '• Top Seller: Widget Pro']
+                }));
+                orchestratorLog.innerHTML += '<div class="text-green-200">🤖 Deploying Inventory DB Agent...</div>';
+            }
+            
+            // Parallel API calls through API agents
+            const apiPromises = [];
+            if (needsWeather) {
+                apiPromises.push(activateAndRetrieveData('weatherAPIAgent', 'Fetching climate data...', {
+                    title: '🤖 Weather API Agent Report:',
+                    data: ['• Temperature: 72°F', '• Humidity: 65%', '• Conditions: Partly Cloudy', '• 7-day trend: Stable']
+                }));
+                orchestratorLog.innerHTML += '<div class="text-green-200">🤖 Deploying Weather API Agent...</div>';
+            }
+            
+            if (needsMarket) {
+                apiPromises.push(activateAndRetrieveData('marketAPIAgent', 'Analyzing market trends...', {
+                    title: '🤖 Market API Agent Report:',
+                    data: ['• Market Cap: $2.1T', '• Volatility: Low', '• Sector Growth: +12%', '• Consumer Index: 108.3']
+                }));
+                orchestratorLog.innerHTML += '<div class="text-green-200">🤖 Deploying Market API Agent...</div>';
+            }
+            
+            if (needsSocial) {
+                apiPromises.push(activateAndRetrieveData('socialAPIAgent', 'Monitoring social sentiment...', {
+                    title: '🤖 Social API Agent Report:',
+                    data: ['• Mentions: 15,420', '• Sentiment: 82% Positive', '• Trending: #innovation', '• Engagement: +24%']
+                }));
+                orchestratorLog.innerHTML += '<div class="text-green-200">🤖 Deploying Social API Agent...</div>';
+            }
+            
+            // Wait for all data retrieval to complete
+            await Promise.all([...dbPromises, ...apiPromises]);
+            
+            await sleep(1000);
+            orchestratorLog.innerHTML += '<div class="text-purple-200">🧠 Initiating analysis engines...</div>';
+            
+            // Activate analysis engines based on complexity
+            const analysisPromises = [];
+            
+            // Always use statistics engine for basic analysis
+            analysisPromises.push(activateAndRetrieveData('statisticsEngine', 'Computing statistics...', {
+                title: '📊 Statistical Analysis:',
+                data: ['• Correlation: 0.87', '• Confidence: 95%', '• Variance: 12.3%', '• Trend: Positive']
+            }));
+            orchestratorLog.innerHTML += '<div class="text-green-200">📊 Running statistical analysis...</div>';
+            
+            // Use ML engine for pattern recognition
+            if (dbPromises.length > 1 || apiPromises.length > 1) {
+                analysisPromises.push(activateAndRetrieveData('mlEngine', 'Training models...', {
+                    title: '🤖 ML Analysis Complete:',
+                    data: ['• Pattern Match: 94%', '• Anomalies: 3 detected', '• Clusters: 5 identified', '• Accuracy: 91.2%']
+                }));
+                orchestratorLog.innerHTML += '<div class="text-green-200">🤖 Deploying ML algorithms...</div>';
+            }
+            
+            // Use predictive engine for forecasting
+            if (needsSalesData || needsMarket) {
+                analysisPromises.push(activateAndRetrieveData('predictiveEngine', 'Generating forecasts...', {
+                    title: '🔮 Predictive Analysis:',
+                    data: ['• 30-day forecast: +8%', '• Risk Level: Low', '• Confidence: 89%', '• Key Driver: Seasonality']
+                }));
+                orchestratorLog.innerHTML += '<div class="text-green-200">🔮 Running predictive models...</div>';
+            }
+            
+            // Wait for all analysis to complete
+            await Promise.all(analysisPromises);
+            
+            // Step 5: Orchestrator compiles results
+            await sleep(1000);
+            document.getElementById('orchestrator').className = 'bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 border-2 border-green-400 pulse-glow';
+            orchestratorLog.innerHTML += '<div class="text-purple-200">🎯 Synthesizing comprehensive response...</div>';
+            
+            // Step 6: Show final results
+            await sleep(1500);
+            showFinalResults(request);
+        }
+        
+        function activateTool(toolId, status) {
+            const tool = document.getElementById(toolId);
+            const isAgent = toolId.includes('Agent');
+            const isEngine = toolId.includes('Engine');
+            const isDB = toolId.includes('DB') && !toolId.includes('Agent') && !toolId.includes('MCP');
+            const isAPI = toolId.includes('API') && !toolId.includes('Agent') && !toolId.includes('MCP');
+            const isMCP = toolId.includes('MCP');
+            
+            if (isAgent) {
+                tool.className = 'bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-blue-400 pulse-glow transition-all duration-300';
+            } else if (isEngine) {
+                tool.className = 'bg-slate-800/50 backdrop-blur rounded-xl p-6 border border-blue-400 pulse-glow transition-all duration-300';
+            } else if (isDB || isAPI) {
+                tool.className = 'bg-slate-700/50 backdrop-blur rounded-xl p-3 border border-blue-400 pulse-glow transition-all duration-300';
+            } else if (isMCP) {
+                tool.className = 'bg-slate-600/50 backdrop-blur rounded-lg p-2 border border-blue-400 pulse-glow transition-all duration-300';
+            }
+            document.getElementById(toolId + 'Status').textContent = `Status: ${status}`;
+        }
+        
+        function updateToolData(toolId, data) {
+            const tool = document.getElementById(toolId);
+            const isAgent = toolId.includes('Agent');
+            const isEngine = toolId.includes('Engine');
+            const isDB = toolId.includes('DB') && !toolId.includes('Agent') && !toolId.includes('MCP');
+            const isAPI = toolId.includes('API') && !toolId.includes('Agent') && !toolId.includes('MCP');
+            const isMCP = toolId.includes('MCP');
+            
+            if (isAgent) {
+                tool.className = 'bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-green-400 transition-all duration-300';
+                document.getElementById(toolId + 'Status').textContent = 'Status: Complete';
+                
+                const dataElement = document.getElementById(toolId + 'Data');
+                dataElement.innerHTML = `
+                    <div class="text-green-400 text-xs font-medium">${data.title}</div>
+                    ${data.data.map(item => `<div class="text-slate-300 text-xs">${item}</div>`).join('')}
+                `;
+            } else if (isEngine) {
+                tool.className = 'bg-slate-800/50 backdrop-blur rounded-xl p-6 border border-green-400 transition-all duration-300';
+                document.getElementById(toolId + 'Status').textContent = 'Status: Complete';
+                
+                const dataElement = document.getElementById(toolId + 'Data');
+                dataElement.innerHTML = `
+                    <div class="text-green-400 text-sm font-medium">${data.title}</div>
+                    ${data.data.map(item => `<div class="text-slate-300 text-sm">${item}</div>`).join('')}
+                `;
+            } else if (isDB || isAPI) {
+                tool.className = 'bg-slate-700/50 backdrop-blur rounded-xl p-3 border border-green-400 transition-all duration-300';
+                document.getElementById(toolId + 'Status').textContent = 'Status: Active';
+            } else if (isMCP) {
+                tool.className = 'bg-slate-600/50 backdrop-blur rounded-lg p-2 border border-green-400 transition-all duration-300';
+                document.getElementById(toolId + 'Status').textContent = 'Status: Connected';
+            }
+        }
+        
+        async function activateAndRetrieveData(toolId, status, data) {
+            activateTool(toolId, status);
+            
+            // Also activate the corresponding MCP connector and database/API
+            let mcpId = '';
+            let correspondingId = '';
+            if (toolId.includes('DBAgent')) {
+                mcpId = toolId.replace('DBAgent', 'DBMCP');
+                correspondingId = toolId.replace('DBAgent', 'DB');
+            } else if (toolId.includes('APIAgent')) {
+                mcpId = toolId.replace('APIAgent', 'APIMCP');
+                correspondingId = toolId.replace('APIAgent', 'API');
+            }
+            
+            if (mcpId && correspondingId) {
+                await sleep(300); // Small delay before activating MCP
+                activateTool(mcpId, 'Connecting...');
+                
+                await sleep(400); // Small delay before activating the data source
+                activateTool(correspondingId, 'Querying...');
+            }
+            
+            await sleep(1500 + Math.random() * 1000); // Simulate varying response times
+            updateToolData(toolId, data);
+            
+            // Update the MCP connector and corresponding database or API status
+            if (mcpId) {
+                updateToolData(mcpId, { title: '', data: [] });
+            }
+            if (correspondingId) {
+                updateToolData(correspondingId, { title: '', data: [] });
+            }
+        }
+        
+        function showFinalResults(request) {
+            const resultsSection = document.getElementById('resultsSection');
+            const finalResults = document.getElementById('finalResults');
+            
+            finalResults.innerHTML = `
+                <div class="mb-4">
+                    <h4 class="text-lg font-semibold text-green-400 mb-2">Request: "${request}"</h4>
+                </div>
+                <div class="space-y-3">
+                    <div class="bg-slate-600/50 rounded-lg p-3">
+                        <div class="font-medium text-blue-300">🌤️ Weather Context</div>
+                        <div class="text-sm text-slate-300">Current conditions show favorable weather (72°F, partly cloudy) which historically correlates with increased foot traffic.</div>
+                    </div>
+                    <div class="bg-slate-600/50 rounded-lg p-3">
+                        <div class="font-medium text-emerald-300">📈 Sales Performance</div>
+                        <div class="text-sm text-slate-300">Q4 shows strong performance with $2.4M revenue (+15% growth). Widget Pro remains the top-performing product.</div>
+                    </div>
+                    <div class="bg-slate-600/50 rounded-lg p-3">
+                        <div class="font-medium text-purple-300">🎯 Key Insights</div>
+                        <div class="text-sm text-slate-300">Analytics reveal a positive correlation between favorable weather and sales performance, with 94% confidence. Weather conditions contributed an estimated +8% boost to Q4 sales.</div>
+                    </div>
+                </div>
+                <div class="mt-4 p-3 bg-green-900/30 border border-green-500/30 rounded-lg">
+                    <div class="text-green-400 font-medium">✅ Orchestration Complete</div>
+                    <div class="text-sm text-green-200">Successfully coordinated 6 agents through MCP connectors and synthesized comprehensive response</div>
+                </div>
+            `;
+            
+            resultsSection.style.opacity = '1';
+        }
+        
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        // Add some sample requests for easy testing
+        const sampleRequests = [
+            "Analyze customer demographics and sales performance with market trends",
+            "Check inventory levels and predict demand based on weather and social sentiment",
+            "Compare user engagement with financial market conditions and seasonal patterns",
+            "Generate sales forecast using customer data and social media trends",
+            "Analyze product performance across different user segments and weather conditions"
+        ];
+        
+        // Add click handler for sample requests
+        document.addEventListener('DOMContentLoaded', function() {
+            const input = document.getElementById('userInput');
+            input.addEventListener('focus', function() {
+                if (!this.value) {
+                    this.placeholder = sampleRequests[Math.floor(Math.random() * sampleRequests.length)];
+                }
+            });
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9872be0f432c47b0',t:'MTc1OTIyNTA1NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
